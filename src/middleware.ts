@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
 // Routes that require authentication
-const protectedRoutes = ["/dashboard", "/workspaces", "/tutorials"];
+const protectedRoutes = ["/dashboard", "/workspaces", "/tutorials", "/share"];
 
 // Routes only accessible to managers
 const managerRoutes = ["/workspaces/new", "/tutorials/new"];
