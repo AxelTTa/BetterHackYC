@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import SplatViewer from "@/components/SplatViewer";
+import SplatViewer, { TriggerZone } from "@/components/SplatViewer";
 
 interface WorldAssets {
   splats: {
@@ -39,6 +39,18 @@ export default function Home() {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Demo trigger zones — use the debug HUD to find coordinates in your world,
+  // then define zones here. These fire popups when the camera enters the radius.
+  const [triggerZones] = useState<TriggerZone[]>([
+    {
+      id: "popup-4-0-1",
+      position: { x: 4, y: 0, z: 1 },
+      radius: 1.0,
+      title: "You found it!",
+      description: "This popup triggered because your camera came within 1 unit of coordinates (4, 0, 1).",
+    },
+  ]);
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -634,7 +646,7 @@ export default function Home() {
 
       {/* 3D Viewer Modal */}
       {showViewer && (
-        <SplatViewer world={world} onClose={() => setShowViewer(false)} />
+        <SplatViewer world={world} onClose={() => setShowViewer(false)} triggerZones={triggerZones} />
       )}
     </main>
   );
