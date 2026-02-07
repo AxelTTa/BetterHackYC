@@ -54,16 +54,24 @@ export default function AnnotationViewer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0, z: 5 });
+  const [iframeReady, setIframeReady] = useState(false);
 
-  // Send annotations to iframe when they change
+  // Send annotations to iframe when they change or iframe becomes ready
   useEffect(() => {
-    if (iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.postMessage(
-        { type: "updateAnnotations", annotations, activeAnnotationId },
-        "*"
-      );
+    if (iframeReady && iframeRef.current?.contentWindow && annotations.length > 0) {
+      console.log('Sending annotations to iframe:', annotations.length);
+      // Small delay to ensure iframe script is fully initialized
+      const timer = setTimeout(() => {
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "updateAnnotations", annotations, activeAnnotationId },
+            "*"
+          );
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [annotations, activeAnnotationId]);
+  }, [annotations, activeAnnotationId, iframeReady]);
 
   useEffect(() => {
     if (!world || !iframeRef.current) return;
@@ -226,9 +234,11 @@ export default function AnnotationViewer({
 
     // Listen for messages from parent
     window.addEventListener('message', (event) => {
+      console.log('Iframe received message:', event.data.type, event.data.annotations?.length);
       if (event.data.type === 'updateAnnotations') {
         annotations = event.data.annotations || [];
         activeAnnotationId = event.data.activeAnnotationId;
+        console.log('Updated annotations:', annotations.length);
         updateAnnotationPositions();
       } else if (event.data.type === 'setEditMode') {
         editMode = event.data.editMode;
@@ -330,6 +340,7 @@ export default function AnnotationViewer({
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === "loaded") {
         setLoading(false);
+        setIframeReady(true);
       } else if (event.data.type === "error") {
         setError(event.data.message);
         setLoading(false);

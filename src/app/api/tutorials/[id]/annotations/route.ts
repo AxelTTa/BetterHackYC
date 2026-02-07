@@ -30,6 +30,15 @@ export async function POST(
       );
     }
 
+    // Auto-calculate order if not provided or if it's 1 (default)
+    let finalOrder = order;
+    if (!order || order === 1) {
+      const existingAnnotations = await db.query.annotation.findMany({
+        where: (a, { eq }) => eq(a.tutorialId, tutorialId),
+      });
+      finalOrder = existingAnnotations.length + 1;
+    }
+
     const [newAnnotation] = await db
       .insert(annotation)
       .values({
@@ -39,7 +48,7 @@ export async function POST(
         x,
         y,
         z,
-        order: order || 1,
+        order: finalOrder,
       })
       .returning();
 

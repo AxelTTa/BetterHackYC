@@ -424,6 +424,11 @@ export default function TutorialEditorPage() {
                   annotations={annotations}
                   activeId={activeAnnotation?.id || null}
                   onSelect={handleAnnotationClick}
+                  onEdit={editMode ? (annotation) => {
+                    setEditingAnnotation(annotation);
+                    setIsNewAnnotation(false);
+                  } : undefined}
+                  editMode={editMode}
                 />
               )}
             </div>
