@@ -36,6 +36,7 @@ interface AnnotationViewerProps {
   annotations: Annotation[];
   onAnnotationClick?: (annotation: Annotation) => void;
   onAddAnnotation?: (position: { x: number; y: number; z: number }) => void;
+  onCameraMove?: (position: { x: number; y: number; z: number }) => void;
   editMode?: boolean;
   activeAnnotationId?: string | null;
   onClose?: () => void;
@@ -46,6 +47,7 @@ export default function AnnotationViewer({
   annotations,
   onAnnotationClick,
   onAddAnnotation,
+  onCameraMove,
   editMode = false,
   activeAnnotationId,
   onClose,
@@ -55,26 +57,44 @@ export default function AnnotationViewer({
   const [error, setError] = useState<string | null>(null);
   const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0, z: 5 });
   const [iframeReady, setIframeReady] = useState(false);
+  
+  // Use ref for callback to avoid stale closures
+  const onCameraMoveRef = useRef(onCameraMove);
+  onCameraMoveRef.current = onCameraMove;
+  
+  // Use ref for annotations to avoid stale closures in message handler
+  const annotationsRef = useRef(annotations);
+  annotationsRef.current = annotations;
+  const activeAnnotationIdRef = useRef(activeAnnotationId);
+  activeAnnotationIdRef.current = activeAnnotationId;
 
   // Send annotations to iframe when they change or iframe becomes ready
   useEffect(() => {
     if (iframeReady && iframeRef.current?.contentWindow && annotations.length > 0) {
-      console.log('Sending annotations to iframe:', annotations.length);
-      // Small delay to ensure iframe script is fully initialized
-      const timer = setTimeout(() => {
+      // Send immediately and also with a delay to ensure iframe is ready
+      const sendAnnotations = () => {
         if (iframeRef.current?.contentWindow) {
           iframeRef.current.contentWindow.postMessage(
             { type: "updateAnnotations", annotations, activeAnnotationId },
             "*"
           );
         }
-      }, 100);
+      };
+      
+      // Send immediately
+      sendAnnotations();
+      
+      // Also send after a delay as backup
+      const timer = setTimeout(sendAnnotations, 200);
       return () => clearTimeout(timer);
     }
   }, [annotations, activeAnnotationId, iframeReady]);
 
   useEffect(() => {
     if (!world || !iframeRef.current) return;
+
+    // Reset iframe ready state when world changes
+    setIframeReady(false);
 
     const splatUrl = world.assets.splats.spz_urls.full_res;
     const annotationsJson = JSON.stringify(annotations);
@@ -234,11 +254,9 @@ export default function AnnotationViewer({
 
     // Listen for messages from parent
     window.addEventListener('message', (event) => {
-      console.log('Iframe received message:', event.data.type, event.data.annotations?.length);
       if (event.data.type === 'updateAnnotations') {
         annotations = event.data.annotations || [];
         activeAnnotationId = event.data.activeAnnotationId;
-        console.log('Updated annotations:', annotations.length);
         updateAnnotationPositions();
       } else if (event.data.type === 'setEditMode') {
         editMode = event.data.editMode;
@@ -275,6 +293,8 @@ export default function AnnotationViewer({
 
       loadingEl.style.display = 'none';
       window.parent.postMessage({ type: 'loaded' }, '*');
+      // Request annotations from parent after load
+      window.parent.postMessage({ type: 'requestAnnotations' }, '*');
 
       // Raycaster for click detection
       const raycaster = new THREE.Raycaster();
@@ -300,17 +320,22 @@ export default function AnnotationViewer({
         }, '*');
       });
 
+      let lastCameraUpdate = 0;
       function animate() {
         requestAnimationFrame(animate);
         controls.update(camera);
         renderer.render(scene, camera);
         updateAnnotationPositions();
         
-        // Send camera position to parent
-        window.parent.postMessage({ 
-          type: 'cameraUpdate', 
-          position: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
-        }, '*');
+        // Throttle camera position updates to parent (every 100ms)
+        const now = Date.now();
+        if (now - lastCameraUpdate > 100) {
+          lastCameraUpdate = now;
+          window.parent.postMessage({ 
+            type: 'cameraUpdate', 
+            position: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
+          }, '*');
+        }
       }
       animate();
 
@@ -341,6 +366,14 @@ export default function AnnotationViewer({
       if (event.data.type === "loaded") {
         setLoading(false);
         setIframeReady(true);
+      } else if (event.data.type === "requestAnnotations") {
+        // Iframe is requesting annotations - send them
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "updateAnnotations", annotations: annotationsRef.current, activeAnnotationId: activeAnnotationIdRef.current },
+            "*"
+          );
+        }
       } else if (event.data.type === "error") {
         setError(event.data.message);
         setLoading(false);
@@ -350,6 +383,9 @@ export default function AnnotationViewer({
         onAddAnnotation(event.data.position);
       } else if (event.data.type === "cameraUpdate") {
         setCameraPosition(event.data.position);
+        if (onCameraMoveRef.current) {
+          onCameraMoveRef.current(event.data.position);
+        }
       }
     };
     window.addEventListener("message", handleMessage);

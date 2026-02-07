@@ -49,6 +49,8 @@ export default function SharedTutorialPage() {
   const [saving, setSaving] = useState(false);
   const [progressLoaded, setProgressLoaded] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0, z: 0 });
+  const [proximityWarning, setProximityWarning] = useState<string | null>(null);
 
   // Load tutorial
   useEffect(() => {
@@ -115,6 +117,24 @@ export default function SharedTutorialPage() {
     ? Math.round((completedSteps.size / sortedAnnotations.length) * 100)
     : 0;
 
+  // Calculate distance between camera and annotation
+  const getDistance = (pos1: { x: number; y: number; z: number }, pos2: { x: number; y: number; z: number }) => {
+    return Math.sqrt(
+      Math.pow(pos1.x - pos2.x, 2) +
+      Math.pow(pos1.y - pos2.y, 2) +
+      Math.pow(pos1.z - pos2.z, 2)
+    );
+  };
+
+  // Check if user can complete current step (must be near the annotation)
+  const PROXIMITY_THRESHOLD = 3.0; // Distance threshold to complete annotation
+  const isNearCurrentAnnotation = currentAnnotation 
+    ? getDistance(cameraPosition, { x: currentAnnotation.x, y: currentAnnotation.y, z: currentAnnotation.z }) < PROXIMITY_THRESHOLD
+    : false;
+
+  // Get the next step that needs to be completed (for sequential enforcement)
+  const nextRequiredStep = sortedAnnotations.findIndex(ann => !completedSteps.has(ann.id));
+
   const saveProgress = useCallback(async (newCompletedSteps: Set<string>) => {
     if (!session || !tutorial) return;
     
@@ -145,15 +165,40 @@ export default function SharedTutorialPage() {
   }, [session, tutorial, sortedAnnotations.length]);
 
   const markComplete = useCallback(() => {
-    if (currentAnnotation) {
-      const newCompleted = new Set([...completedSteps, currentAnnotation.id]);
-      setCompletedSteps(newCompleted);
-      saveProgress(newCompleted);
+    if (!currentAnnotation) return;
+    
+    // Check if this step is already completed
+    if (completedSteps.has(currentAnnotation.id)) {
+      setProximityWarning("This step is already completed!");
+      setTimeout(() => setProximityWarning(null), 2000);
+      return;
     }
+    
+    // Enforce sequential completion - must complete steps in order
+    if (nextRequiredStep !== -1 && currentStep !== nextRequiredStep) {
+      setProximityWarning(`Complete step ${nextRequiredStep + 1} first!`);
+      setTimeout(() => setProximityWarning(null), 2000);
+      return;
+    }
+    
+    // Check proximity to annotation
+    if (!isNearCurrentAnnotation) {
+      setProximityWarning("Move closer to the marker to complete this step!");
+      setTimeout(() => setProximityWarning(null), 2000);
+      return;
+    }
+    
+    // All checks passed - mark as complete
+    const newCompleted = new Set([...completedSteps, currentAnnotation.id]);
+    setCompletedSteps(newCompleted);
+    saveProgress(newCompleted);
+    setProximityWarning(null);
+    
+    // Auto-advance to next step
     if (currentStep < sortedAnnotations.length - 1) {
       setCurrentStep(currentStep + 1);
     }
-  }, [currentAnnotation, completedSteps, currentStep, sortedAnnotations.length, saveProgress]);
+  }, [currentAnnotation, completedSteps, currentStep, sortedAnnotations.length, saveProgress, isNearCurrentAnnotation, nextRequiredStep]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -256,8 +301,8 @@ export default function SharedTutorialPage() {
                   <span className="text-green-400 font-bold text-xs">↵</span>
                 </div>
                 <div>
-                  <p className="font-medium">Complete Steps with Enter</p>
-                  <p className="text-sm text-gray-400">Press Enter or Space to mark a step complete</p>
+                  <p className="font-medium">Complete Steps in Order</p>
+                  <p className="text-sm text-gray-400">Navigate to each marker and press Enter when close</p>
                 </div>
               </div>
 
@@ -268,8 +313,8 @@ export default function SharedTutorialPage() {
                   </svg>
                 </div>
                 <div>
-                  <p className="font-medium">Click Markers in 3D View</p>
-                  <p className="text-sm text-gray-400">Click numbered markers to jump to that step</p>
+                  <p className="font-medium">Get Close to Markers</p>
+                  <p className="text-sm text-gray-400">Move near each marker to complete that step</p>
                 </div>
               </div>
 
@@ -350,9 +395,29 @@ export default function SharedTutorialPage() {
               const index = sortedAnnotations.findIndex((a) => a.id === ann.id);
               if (index !== -1) setCurrentStep(index);
             }}
+            onCameraMove={setCameraPosition}
             editMode={false}
             activeAnnotationId={currentAnnotation?.id}
           />
+          
+          {/* Proximity Warning */}
+          {proximityWarning && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 bg-yellow-600 text-white rounded-lg shadow-lg animate-pulse">
+              {proximityWarning}
+            </div>
+          )}
+          
+          {/* Proximity Indicator */}
+          {currentAnnotation && !completedSteps.has(currentAnnotation.id) && (
+            <div className="absolute bottom-4 left-4 z-20 px-3 py-2 bg-gray-800/90 rounded-lg text-sm">
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${isNearCurrentAnnotation ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span className="text-gray-300">
+                  {isNearCurrentAnnotation ? 'Close enough to complete!' : 'Move closer to marker'}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sidebar - Step Guide */}
@@ -381,14 +446,27 @@ export default function SharedTutorialPage() {
               >
                 Previous
               </button>
-              <button
-                onClick={markComplete}
-                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors"
-              >
-                {completedSteps.has(currentAnnotation?.id || "") 
-                  ? (currentStep < sortedAnnotations.length - 1 ? "Next Step" : "Completed!")
-                  : "Mark Complete & Continue"}
-              </button>
+              {completedSteps.has(currentAnnotation?.id || "") ? (
+                <button
+                  onClick={() => currentStep < sortedAnnotations.length - 1 && setCurrentStep(currentStep + 1)}
+                  disabled={currentStep >= sortedAnnotations.length - 1}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+                >
+                  {currentStep < sortedAnnotations.length - 1 ? "Next Step" : "All Done! ✓"}
+                </button>
+              ) : (
+                <button
+                  onClick={markComplete}
+                  disabled={!isNearCurrentAnnotation || (nextRequiredStep !== -1 && currentStep !== nextRequiredStep)}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+                >
+                  {nextRequiredStep !== -1 && currentStep !== nextRequiredStep
+                    ? `Complete Step ${nextRequiredStep + 1} First`
+                    : isNearCurrentAnnotation 
+                      ? "Mark Complete ✓" 
+                      : "Move Closer to Complete"}
+                </button>
+              )}
             </div>
           </div>
 
