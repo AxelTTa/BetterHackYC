@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 interface WorldAssets {
   splats: {
@@ -21,21 +21,44 @@ interface World {
   world_marble_url: string;
 }
 
+export interface TriggerZone {
+  id: string;
+  position: { x: number; y: number; z: number };
+  radius: number;
+  title: string;
+  description: string;
+}
+
+interface ActivePopup {
+  triggerId: string;
+  title: string;
+  description: string;
+}
+
 interface SplatViewerProps {
   world: World | null;
   onClose: () => void;
+  triggerZones?: TriggerZone[];
 }
 
-export default function SplatViewer({ world, onClose }: SplatViewerProps) {
+export default function SplatViewer({ world, onClose, triggerZones = [] }: SplatViewerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activePopup, setActivePopup] = useState<ActivePopup | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{ x: number; y: number; z: number } | null>(null);
+  const [showDebug, setShowDebug] = useState(true);
+
+  const dismissPopup = useCallback(() => {
+    setActivePopup(null);
+  }, []);
 
   useEffect(() => {
     if (!world || !iframeRef.current) return;
 
     const splatUrl = world.assets.splats.spz_urls.full_res;
-    
+    const triggersJson = JSON.stringify(triggerZones);
+
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -68,6 +91,26 @@ export default function SplatViewer({ world, onClose }: SplatViewerProps) {
       width: 0%;
       transition: width 0.3s;
     }
+    #debug-hud {
+      position: fixed;
+      top: 80px;
+      right: 16px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #22d3ee;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      pointer-events: none;
+      z-index: 100;
+      line-height: 1.6;
+      min-width: 200px;
+    }
+    #debug-hud.hidden { display: none; }
+    #debug-hud .label { color: #94a3b8; }
+    #debug-hud .value { color: #22d3ee; font-weight: bold; }
+    #debug-hud .title { color: #f8fafc; font-weight: bold; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
   </style>
   <script type="importmap">
   {
@@ -84,6 +127,16 @@ export default function SplatViewer({ world, onClose }: SplatViewerProps) {
     <div id="progress"><div id="progress-bar"></div></div>
     <div id="percent">0%</div>
   </div>
+  <div id="debug-hud">
+    <div class="title">Camera Debug [D to toggle]</div>
+    <div><span class="label">X:</span> <span class="value" id="cam-x">0.00</span></div>
+    <div><span class="label">Y:</span> <span class="value" id="cam-y">0.00</span></div>
+    <div><span class="label">Z:</span> <span class="value" id="cam-z">0.00</span></div>
+    <div style="margin-top: 6px; border-top: 1px solid rgba(34,211,238,0.2); padding-top: 6px;">
+      <span class="label">Triggers:</span> <span class="value" id="trigger-count">0</span>
+    </div>
+    <div><span class="label">Active:</span> <span class="value" id="active-trigger">none</span></div>
+  </div>
   <script type="module">
     import * as THREE from "three";
     import { SparkRenderer, SplatMesh, SplatLoader, SparkControls } from "@sparkjsdev/spark";
@@ -91,6 +144,41 @@ export default function SplatViewer({ world, onClose }: SplatViewerProps) {
     const loadingEl = document.getElementById('loading');
     const progressBar = document.getElementById('progress-bar');
     const percentEl = document.getElementById('percent');
+    const debugHud = document.getElementById('debug-hud');
+    const camX = document.getElementById('cam-x');
+    const camY = document.getElementById('cam-y');
+    const camZ = document.getElementById('cam-z');
+    const triggerCountEl = document.getElementById('trigger-count');
+    const activeTriggerEl = document.getElementById('active-trigger');
+
+    // Parse trigger zones passed from parent
+    const triggerZones = ${triggersJson};
+    triggerCountEl.textContent = triggerZones.length.toString();
+
+    // Track which triggers are currently active (camera inside radius)
+    const activeTriggers = new Set();
+
+    // Throttle postMessage for debug info (every 10 frames)
+    let frameCount = 0;
+
+    // Toggle debug HUD with 'D' key
+    let debugVisible = true;
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'd' || e.key === 'D') {
+        debugVisible = !debugVisible;
+        debugHud.classList.toggle('hidden', !debugVisible);
+        window.parent.postMessage({ type: 'debug-toggle', visible: debugVisible }, '*');
+      }
+    });
+
+    // Listen for trigger zone updates from parent
+    window.addEventListener('message', (e) => {
+      if (e.data.type === 'update-triggers') {
+        triggerZones.length = 0;
+        triggerZones.push(...e.data.triggers);
+        triggerCountEl.textContent = triggerZones.length.toString();
+      }
+    });
 
     try {
       const scene = new THREE.Scene();
@@ -122,10 +210,66 @@ export default function SplatViewer({ world, onClose }: SplatViewerProps) {
       loadingEl.style.display = 'none';
       window.parent.postMessage({ type: 'loaded' }, '*');
 
+      function checkTriggers() {
+        const camPos = camera.position;
+
+        for (const trigger of triggerZones) {
+          const dx = camPos.x - trigger.position.x;
+          const dy = camPos.y - trigger.position.y;
+          const dz = camPos.z - trigger.position.z;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          if (dist < trigger.radius) {
+            if (!activeTriggers.has(trigger.id)) {
+              activeTriggers.add(trigger.id);
+              activeTriggerEl.textContent = trigger.id;
+              window.parent.postMessage({
+                type: 'trigger-enter',
+                triggerId: trigger.id,
+                title: trigger.title,
+                description: trigger.description,
+              }, '*');
+            }
+          } else {
+            if (activeTriggers.has(trigger.id)) {
+              activeTriggers.delete(trigger.id);
+              activeTriggerEl.textContent = activeTriggers.size > 0
+                ? Array.from(activeTriggers)[0]
+                : 'none';
+              window.parent.postMessage({
+                type: 'trigger-leave',
+                triggerId: trigger.id,
+              }, '*');
+            }
+          }
+        }
+      }
+
       function animate() {
         requestAnimationFrame(animate);
         controls.update(camera);
         renderer.render(scene, camera);
+
+        // Update debug HUD
+        if (debugVisible) {
+          camX.textContent = camera.position.x.toFixed(2);
+          camY.textContent = camera.position.y.toFixed(2);
+          camZ.textContent = camera.position.z.toFixed(2);
+        }
+
+        // Send camera position to parent (throttled)
+        frameCount++;
+        if (frameCount % 10 === 0) {
+          window.parent.postMessage({
+            type: 'camera-position',
+            x: camera.position.x,
+            y: camera.position.y,
+            z: camera.position.z,
+          }, '*');
+        }
+
+        // Check trigger zones every frame
+        checkTriggers();
       }
       animate();
 
@@ -153,11 +297,33 @@ export default function SplatViewer({ world, onClose }: SplatViewerProps) {
     }
 
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'loaded') {
-        setLoading(false);
-      } else if (event.data.type === 'error') {
-        setError(event.data.message);
-        setLoading(false);
+      const { data } = event;
+      switch (data.type) {
+        case 'loaded':
+          setLoading(false);
+          break;
+        case 'error':
+          setError(data.message);
+          setLoading(false);
+          break;
+        case 'camera-position':
+          setDebugInfo({ x: data.x, y: data.y, z: data.z });
+          break;
+        case 'debug-toggle':
+          setShowDebug(data.visible);
+          break;
+        case 'trigger-enter':
+          setActivePopup({
+            triggerId: data.triggerId,
+            title: data.title,
+            description: data.description,
+          });
+          break;
+        case 'trigger-leave':
+          setActivePopup((prev) =>
+            prev?.triggerId === data.triggerId ? null : prev
+          );
+          break;
       }
     };
     window.addEventListener('message', handleMessage);
@@ -165,7 +331,7 @@ export default function SplatViewer({ world, onClose }: SplatViewerProps) {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [world]);
+  }, [world, triggerZones]);
 
   if (!world) return null;
 
@@ -217,9 +383,38 @@ export default function SplatViewer({ world, onClose }: SplatViewerProps) {
         sandbox="allow-scripts allow-same-origin"
       />
 
+      {/* Trigger popup overlay */}
+      {activePopup && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 animate-in fade-in">
+          <div className="bg-gray-900/95 backdrop-blur-lg border border-cyan-500/30 rounded-2xl p-6 max-w-md shadow-2xl shadow-cyan-500/10">
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="text-white text-lg font-semibold pr-4">
+                {activePopup.title}
+              </h3>
+              <button
+                onClick={dismissPopup}
+                className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors flex-shrink-0"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-gray-300 text-sm leading-relaxed">
+              {activePopup.description}
+            </p>
+            <div className="mt-4 pt-3 border-t border-gray-700/50">
+              <p className="text-cyan-400/60 text-xs font-mono">
+                Zone: {activePopup.triggerId}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Controls hint */}
       <div className="absolute bottom-4 left-4 text-white/60 text-sm">
-        <p>🖱️ Drag to rotate • Scroll to zoom • Right-click to pan</p>
+        <p>Drag to rotate / Scroll to zoom / Right-click to pan / D to toggle debug</p>
       </div>
 
       {/* Open in Marble link */}
@@ -229,7 +424,7 @@ export default function SplatViewer({ world, onClose }: SplatViewerProps) {
         rel="noopener noreferrer"
         className="absolute bottom-4 right-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
       >
-        Open in Marble ↗
+        Open in Marble
       </a>
     </div>
   );
