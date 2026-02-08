@@ -50,6 +50,13 @@ export default function TutorialEditorPage() {
   const [tutorial, setTutorial] = useState<Tutorial | null>(null);
   const [world, setWorld] = useState<World | null>(null);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const annotationsRef = useRef<Annotation[]>([]);
+  
+  // Helper to update annotations state and ref together
+  const updateAnnotations = (newAnnotations: Annotation[]) => {
+    annotationsRef.current = newAnnotations;
+    setAnnotations(newAnnotations);
+  };
   const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
   const [editingAnnotation, setEditingAnnotation] = useState<Partial<Annotation> | null>(null);
   const [isNewAnnotation, setIsNewAnnotation] = useState(false);
@@ -112,6 +119,7 @@ export default function TutorialEditorPage() {
           setTutorial(data.tutorial);
           setTutorialTitle(data.tutorial.title);
           setAnnotations(data.tutorial.annotations || []);
+          annotationsRef.current = data.tutorial.annotations || [];
 
           // Fetch world data
           if (data.tutorial.workspace?.modelUuid) {
@@ -214,7 +222,7 @@ export default function TutorialEditorPage() {
       ...position,
       title: "",
       content: "",
-      order: annotations.length + 1,
+      order: annotationsRef.current.length + 1,
       tutorialId: currentTutorialId!, // Store the tutorial ID with the annotation
     };
     setEditingAnnotation(newAnnotation);
@@ -252,14 +260,14 @@ export default function TutorialEditorPage() {
             x: data.x,
             y: data.y,
             z: data.z,
-            order: data.order || annotations.length + 1,
+            order: data.order || annotationsRef.current.length + 1,
           }),
         });
 
         if (!res.ok) throw new Error("Failed to create annotation");
 
         const result = await res.json();
-        setAnnotations([...annotations, result.annotation]);
+        updateAnnotations([...annotationsRef.current, result.annotation]);
         setActiveAnnotation(result.annotation);
       } else if (editingAnnotation?.id) {
         // Update existing annotation
@@ -275,8 +283,8 @@ export default function TutorialEditorPage() {
         if (!res.ok) throw new Error("Failed to update annotation");
 
         const result = await res.json();
-        setAnnotations(
-          annotations.map((a) =>
+        updateAnnotations(
+          annotationsRef.current.map((a) =>
             a.id === editingAnnotation.id ? result.annotation : a
           )
         );
@@ -291,18 +299,19 @@ export default function TutorialEditorPage() {
   };
 
   const handleDeleteAnnotation = async () => {
-    if (!editingAnnotation?.id || !tutorial?.id || tutorial.id === "new") return;
+    const currentId = tutorialIdRef.current;
+    if (!editingAnnotation?.id || !currentId || currentId === "new") return;
 
     setSaving(true);
     try {
       const res = await fetch(
-        `/api/tutorials/${tutorial.id}/annotations?annotationId=${editingAnnotation.id}`,
+        `/api/tutorials/${currentId}/annotations?annotationId=${editingAnnotation.id}`,
         { method: "DELETE" }
       );
 
       if (!res.ok) throw new Error("Failed to delete annotation");
 
-      setAnnotations(annotations.filter((a) => a.id !== editingAnnotation.id));
+      updateAnnotations(annotationsRef.current.filter((a) => a.id !== editingAnnotation.id));
       setActiveAnnotation(null);
     } catch (err) {
       console.error("Delete annotation error:", err);

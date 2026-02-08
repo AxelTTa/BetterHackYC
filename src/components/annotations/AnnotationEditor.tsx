@@ -75,8 +75,12 @@ export default function AnnotationEditor({
             value={order}
             onChange={(e) => setOrder(parseInt(e.target.value) || 1)}
             min={1}
-            className="w-24 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isNew}
+            className="w-24 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
+          {isNew && (
+            <p className="text-xs text-gray-500 mt-1">Auto-assigned based on current step count</p>
+          )}
         </div>
 
         {annotation?.x !== undefined && (
