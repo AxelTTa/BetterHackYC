@@ -30,9 +30,9 @@ export async function POST(
       );
     }
 
-    // Auto-calculate order if not provided or if it's 1 (default)
+    // Auto-calculate order only if not explicitly provided
     let finalOrder = order;
-    if (!order || order === 1) {
+    if (order === undefined || order === null) {
       const existingAnnotations = await db.query.annotation.findMany({
         where: (a, { eq }) => eq(a.tutorialId, tutorialId),
       });
@@ -117,17 +117,18 @@ export async function PUT(
       );
     }
 
+    // Only update fields that were explicitly provided to avoid wiping coordinates
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content;
+    if (x !== undefined) updateData.x = x;
+    if (y !== undefined) updateData.y = y;
+    if (z !== undefined) updateData.z = z;
+    if (order !== undefined) updateData.order = order;
+
     const [updated] = await db
       .update(annotation)
-      .set({
-        title,
-        content,
-        x,
-        y,
-        z,
-        order,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(
         and(eq(annotation.id, annotationId), eq(annotation.tutorialId, tutorialId))
       )

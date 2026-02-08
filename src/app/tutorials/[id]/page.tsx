@@ -120,7 +120,7 @@ export default function TutorialEditorPage() {
     loadData();
   }, [tutorialId, isNew, searchParams]);
 
-  const saveTutorial = async () => {
+  const saveTutorial = async (skipRedirect = false) => {
     if (!tutorial) return null;
 
     setSaving(true);
@@ -139,8 +139,16 @@ export default function TutorialEditorPage() {
         if (!res.ok) throw new Error("Failed to create tutorial");
 
         const data = await res.json();
-        // Redirect to the new tutorial's edit page
-        router.replace(`/tutorials/${data.tutorial.id}`);
+        
+        if (skipRedirect) {
+          // Update state without navigation (used when adding annotations to new tutorial)
+          setTutorial({ ...tutorial, id: data.tutorial.id, ...data.tutorial });
+          // Update URL without full navigation
+          window.history.replaceState(null, '', `/tutorials/${data.tutorial.id}`);
+        } else {
+          // Full redirect to the new tutorial's edit page
+          router.replace(`/tutorials/${data.tutorial.id}`);
+        }
         return data.tutorial;
       } else {
         // Update existing tutorial
@@ -165,10 +173,10 @@ export default function TutorialEditorPage() {
   };
 
   const handleAddAnnotation = async (position: { x: number; y: number; z: number }) => {
-    // If this is a new tutorial, save it first
+    // If this is a new tutorial, save it first (without redirect to preserve 3D scene)
     let currentTutorialId = tutorialId;
     if (isNew) {
-      const saved = await saveTutorial();
+      const saved = await saveTutorial(true); // skipRedirect = true
       if (!saved) return;
       currentTutorialId = saved.id;
     }
@@ -185,17 +193,14 @@ export default function TutorialEditorPage() {
   };
 
   const handleSaveAnnotation = async (data: Partial<Annotation>) => {
-    const currentTutorialId = tutorial?.id === "new" ? null : tutorial?.id;
+    let targetTutorialId = tutorial?.id === "new" ? null : tutorial?.id;
     
-    if (!currentTutorialId || currentTutorialId === "new") {
-      // Save tutorial first if new
-      const saved = await saveTutorial();
+    if (!targetTutorialId) {
+      // Save tutorial first if new, and capture the returned ID (without redirect)
+      const saved = await saveTutorial(true); // skipRedirect = true
       if (!saved) return;
+      targetTutorialId = saved.id;
     }
-
-    const targetTutorialId = currentTutorialId && currentTutorialId !== "new" 
-      ? currentTutorialId 
-      : tutorial?.id;
 
     if (!targetTutorialId || targetTutorialId === "new") return;
 
