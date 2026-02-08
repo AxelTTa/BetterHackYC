@@ -6,13 +6,17 @@ interface AnnotationListProps {
   annotations: Annotation[];
   activeId: string | null;
   onSelect: (annotation: Annotation) => void;
+  onEdit?: (annotation: Annotation) => void;
   onReorder?: (annotations: Annotation[]) => void;
+  editMode?: boolean;
 }
 
 export default function AnnotationList({
   annotations,
   activeId,
   onSelect,
+  onEdit,
+  editMode = false,
 }: AnnotationListProps) {
   const sortedAnnotations = [...annotations].sort((a, b) => a.order - b.order);
 
@@ -47,7 +51,7 @@ export default function AnnotationList({
   return (
     <div className="space-y-2">
       {sortedAnnotations.map((annotation) => (
-        <button
+        <div
           key={annotation.id}
           onClick={() => onSelect(annotation)}
           className={`w-full text-left p-3 rounded-none border transition-all ${
@@ -58,7 +62,7 @@ export default function AnnotationList({
         >
           <div className="flex items-center gap-3">
             <span
-              className={`w-7 h-7 rounded-none flex items-center justify-center text-sm font-bold transition-colors ${
+              className={`w-7 h-7 rounded-none flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors ${
                 activeId === annotation.id
                   ? "bg-amber-600 text-black"
                   : "bg-[var(--bg-input)] text-[var(--text-muted)]"
@@ -76,8 +80,32 @@ export default function AnnotationList({
                 </p>
               )}
             </div>
+            {editMode && onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(annotation);
+                }}
+                className="p-2 text-[var(--text-muted)] hover:text-white hover:bg-[var(--bg-card-hover)] rounded-none transition-colors flex-shrink-0"
+                title="Edit annotation"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              </button>
+            )}
           </div>
-        </button>
+        </div>
       ))}
     </div>
   );

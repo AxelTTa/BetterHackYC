@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 
 type GenerationStatus = "idle" | "generating" | "uploading" | "complete" | "error";
+type CreationMode = "generate" | "model-id";
 
 export default function NewWorkspacePage() {
   const router = useRouter();
@@ -16,6 +17,10 @@ export default function NewWorkspacePage() {
   const [status, setStatus] = useState<GenerationStatus>("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [useDraft, setUseDraft] = useState(true);
+  
+  // Creation mode state
+  const [creationMode, setCreationMode] = useState<CreationMode>("generate");
+  const [modelId, setModelId] = useState("");
   
   // Image upload state
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -113,6 +118,50 @@ export default function NewWorkspacePage() {
       return;
     }
 
+    // Validation based on creation mode
+    if (creationMode === "model-id") {
+      if (!modelId.trim()) {
+        setStatus("error");
+        setStatusMessage("Please enter a model ID");
+        return;
+      }
+      
+      // Direct creation with model ID - skip generation
+      try {
+        setStatus("generating");
+        setStatusMessage("Creating workspace...");
+        
+        const saveRes = await fetch("/api/workspaces", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            modelUuid: modelId.trim(),
+          }),
+        });
+
+        if (!saveRes.ok) {
+          throw new Error("Failed to save workspace");
+        }
+
+        const { workspace } = await saveRes.json();
+        
+        setStatus("complete");
+        setStatusMessage("Workspace created! Redirecting...");
+        
+        setTimeout(() => {
+          router.push(`/workspaces/${workspace.id}`);
+        }, 1000);
+        return;
+      } catch (error) {
+        console.error("Creation error:", error);
+        setStatus("error");
+        setStatusMessage(error instanceof Error ? error.message : "Unknown error");
+        return;
+      }
+    }
+
+    // Generate mode - requires images
     if (selectedImages.length === 0) {
       setStatus("error");
       setStatusMessage("Please upload at least one image");
@@ -248,84 +297,137 @@ export default function NewWorkspacePage() {
             />
           </div>
 
-          {/* Image Upload */}
+          {/* Creation Mode Toggle */}
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-300">
-              Reference Images *
+              Creation Method
             </label>
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-700 rounded-none p-8 text-center cursor-pointer hover:border-gray-600 transition-colors"
-            >
-              <svg className="w-10 h-10 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p className="text-gray-400">Click to upload images</p>
-              <p className="text-xs text-gray-500 mt-1">Up to 8 images, max 10MB each</p>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageSelect}
-              className="hidden"
-            />
-            
-            {imagePreviews.length > 0 && (
-              <div className="grid grid-cols-4 gap-3 mt-4">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-none"
-                    />
-                    <button
-                      onClick={() => removeImage(index)}
-                      className="absolute top-1 right-1 w-6 h-6 bg-red-600 rounded-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Prompt */}
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-300">
-              Description / Prompt
-            </label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-none focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-gray-500 resize-none"
-              placeholder="Describe the environment you want to create..."
-            />
-          </div>
-
-          {/* Draft Mode Toggle */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setUseDraft(!useDraft)}
-              className={`relative w-12 h-6 rounded-none transition-colors ${
-                useDraft ? "bg-amber-600" : "bg-gray-700"
-              }`}
-            >
-              <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-none transition-transform ${
-                  useDraft ? "left-7" : "left-1"
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setCreationMode("generate")}
+                className={`flex-1 px-4 py-3 rounded-none font-medium transition-colors ${
+                  creationMode === "generate"
+                    ? "bg-amber-600 text-white"
+                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                 }`}
-              />
-            </button>
-            <span className="text-sm text-gray-300">
-              Draft mode (faster, lower quality)
-            </span>
+              >
+                Generate from Images
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreationMode("model-id")}
+                className={`flex-1 px-4 py-3 rounded-none font-medium transition-colors ${
+                  creationMode === "model-id"
+                    ? "bg-amber-600 text-white"
+                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                }`}
+              >
+                Use Existing Model ID
+              </button>
+            </div>
           </div>
+
+          {creationMode === "model-id" ? (
+            /* Model ID Input */
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-300">
+                Model ID *
+              </label>
+              <input
+                type="text"
+                value={modelId}
+                onChange={(e) => setModelId(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-none focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-gray-500 font-mono"
+                placeholder="e.g., abc123-def456-ghi789"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Enter the UUID of an existing 3D model from the external API
+              </p>
+            </div>
+          ) : (
+            /* Image Upload Section */
+            <>
+              {/* Image Upload */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-300">
+                  Reference Images *
+                </label>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-700 rounded-none p-8 text-center cursor-pointer hover:border-gray-600 transition-colors"
+                >
+                  <svg className="w-10 h-10 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-gray-400">Click to upload images</p>
+                  <p className="text-xs text-gray-500 mt-1">Up to 8 images, max 10MB each</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                
+                {imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-4 gap-3 mt-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-none"
+                        />
+                        <button
+                          onClick={() => removeImage(index)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Prompt */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-300">
+                  Description / Prompt
+                </label>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500 resize-none"
+                  placeholder="Describe the environment you want to create..."
+                />
+              </div>
+
+              {/* Draft Mode Toggle */}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUseDraft(!useDraft)}
+                  className={`relative w-12 h-6 rounded-none transition-colors ${
+                    useDraft ? "bg-amber-600" : "bg-gray-700"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-none transition-transform ${
+                      useDraft ? "left-7" : "left-1"
+                    }`}
+                  />
+                </button>
+                <span className="text-sm text-gray-300">
+                  Draft mode (faster, lower quality)
+                </span>
+              </div>
+            </>
+          )}
 
           {/* Status Message */}
           {statusMessage && (

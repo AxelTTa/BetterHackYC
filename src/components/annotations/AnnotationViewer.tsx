@@ -37,6 +37,7 @@ interface AnnotationViewerProps {
   annotations: Annotation[];
   onAnnotationClick?: (annotation: Annotation) => void;
   onAddAnnotation?: (position: { x: number; y: number; z: number }) => void;
+  onCameraMove?: (position: { x: number; y: number; z: number }) => void;
   editMode?: boolean;
   activeAnnotationId?: string | null;
   onClose?: () => void;
@@ -47,6 +48,7 @@ export default function AnnotationViewer({
   annotations,
   onAnnotationClick,
   onAddAnnotation,
+  onCameraMove,
   editMode = false,
   activeAnnotationId,
   onClose,
@@ -55,19 +57,53 @@ export default function AnnotationViewer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0, z: 5 });
+  const [iframeReady, setIframeReady] = useState(false);
+  
+  // Use ref for callback to avoid stale closures
+  const onCameraMoveRef = useRef(onCameraMove);
+  onCameraMoveRef.current = onCameraMove;
+  
+  // Use ref for annotations to avoid stale closures in message handler
+  const annotationsRef = useRef(annotations);
+  annotationsRef.current = annotations;
+  const activeAnnotationIdRef = useRef(activeAnnotationId);
+  activeAnnotationIdRef.current = activeAnnotationId;
 
-  // Send annotations to iframe when they change
+  // Send annotations to iframe when they change or iframe becomes ready
   useEffect(() => {
     if (iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.postMessage(
-        { type: "updateAnnotations", annotations, activeAnnotationId },
-        "*"
-      );
+      const sendAnnotations = () => {
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "updateAnnotations", annotations, activeAnnotationId },
+            "*"
+          );
+        }
+      };
+      
+      // Send immediately
+      sendAnnotations();
+      
+      // Also send after delays as backup in case iframe isn't ready
+      const timer1 = setTimeout(sendAnnotations, 100);
+      const timer2 = setTimeout(sendAnnotations, 300);
+      const timer3 = setTimeout(sendAnnotations, 500);
+      const timer4 = setTimeout(sendAnnotations, 1000);
+      
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+        clearTimeout(timer4);
+      };
     }
-  }, [annotations, activeAnnotationId]);
+  }, [annotations, activeAnnotationId, iframeReady]);
 
   useEffect(() => {
     if (!world || !iframeRef.current) return;
+
+    // Reset iframe ready state when world changes
+    setIframeReady(false);
 
     const splatUrl = world.assets.splats.spz_urls.full_res;
     const annotationsJson = JSON.stringify(annotations);
@@ -188,6 +224,58 @@ export default function AnnotationViewer({
       border: 1px solid rgba(255, 255, 255, 0.1);
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
+    .offscreen-indicator {
+      position: fixed;
+      width: 40px;
+      height: 40px;
+      background: #3b82f6;
+      border: 2px solid white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      z-index: 101;
+      animation: pulse 1.5s infinite;
+    }
+    .offscreen-indicator.active {
+      background: #10b981;
+    }
+    .offscreen-indicator::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 0;
+      border: 8px solid transparent;
+    }
+    .offscreen-indicator.left::after {
+      left: -14px;
+      border-right-color: white;
+      border-left: none;
+    }
+    .offscreen-indicator.right::after {
+      right: -14px;
+      border-left-color: white;
+      border-right: none;
+    }
+    .offscreen-indicator.top::after {
+      top: -14px;
+      border-bottom-color: white;
+      border-top: none;
+    }
+    .offscreen-indicator.bottom::after {
+      bottom: -14px;
+      border-top-color: white;
+      border-bottom: none;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
   </style>
   <script type="importmap">
   {
@@ -231,30 +319,85 @@ export default function AnnotationViewer({
       
       annotationsContainer.innerHTML = '';
       
+      const width = renderer.domElement.clientWidth;
+      const height = renderer.domElement.clientHeight;
+      const padding = 60;
+      
       annotations.forEach((ann, index) => {
         const pos = new THREE.Vector3(ann.x, ann.y, ann.z);
         pos.project(camera);
         
-        // Check if in front of camera
-        if (pos.z > 1) return;
+        const isActive = ann.id === activeAnnotationId;
+        const screenX = (pos.x * 0.5 + 0.5) * width;
+        const screenY = (-pos.y * 0.5 + 0.5) * height;
         
-        const x = (pos.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
-        const y = (-pos.y * 0.5 + 0.5) * renderer.domElement.clientHeight;
+        const isBehind = pos.z > 1;
+        const margin = 20; // Small margin to prevent flickering at edges
+        const isOffScreen = isBehind || screenX < -margin || screenX > width + margin || screenY < -margin || screenY > height + margin;
         
-        const marker = document.createElement('div');
-        const hasImage = Boolean(ann.imageUrl);
-        marker.className = 'annotation-marker' 
-          + (ann.id === activeAnnotationId ? ' active' : '') 
-          + (hasImage ? ' has-image' : '');
-        marker.style.left = x + 'px';
-        marker.style.top = y + 'px';
-        marker.innerHTML = '<span>' + (ann.order || index + 1) + '</span>'
-          + (hasImage ? '<span class="annotation-photo">📷</span>' : '')
-          + '<div class="annotation-label">' + ann.title + '</div>';
-        marker.onclick = () => {
-          window.parent.postMessage({ type: 'annotationClick', annotation: ann }, '*');
-        };
-        annotationsContainer.appendChild(marker);
+        if (!isOffScreen) {
+          const marker = document.createElement('div');
+          const hasImage = Boolean(ann.imageUrl);
+          marker.className = 'annotation-marker' 
+            + (ann.id === activeAnnotationId ? ' active' : '') 
+            + (hasImage ? ' has-image' : '');
+          marker.style.left = screenX + 'px';
+          marker.style.top = screenY + 'px';
+          marker.innerHTML = '<span>' + (ann.order || index + 1) + '</span>'
+            + (hasImage ? '<span class="annotation-photo">📷</span>' : '')
+            + '<div class="annotation-label">' + ann.title + '</div>';
+          marker.onclick = () => {
+            window.parent.postMessage({ type: 'annotationClick', annotation: ann }, '*');
+          };
+          annotationsContainer.appendChild(marker);
+        } else {
+          const indicator = document.createElement('div');
+          indicator.className = 'offscreen-indicator' + (isActive ? ' active' : '');
+          
+          let edgeX, edgeY;
+          let direction = '';
+          
+          if (isBehind) {
+            const flippedX = -pos.x;
+            const flippedY = -pos.y;
+            edgeX = (flippedX * 0.5 + 0.5) * width;
+            edgeY = (-flippedY * 0.5 + 0.5) * height;
+          } else {
+            edgeX = screenX;
+            edgeY = screenY;
+          }
+          
+          const clampedX = Math.max(padding, Math.min(width - padding, edgeX));
+          const clampedY = Math.max(padding, Math.min(height - padding, edgeY));
+          
+          if (edgeX <= padding) {
+            direction = 'left';
+            indicator.style.left = padding + 'px';
+            indicator.style.top = clampedY + 'px';
+          } else if (edgeX >= width - padding) {
+            direction = 'right';
+            indicator.style.left = (width - padding) + 'px';
+            indicator.style.top = clampedY + 'px';
+          } else if (edgeY <= padding) {
+            direction = 'top';
+            indicator.style.left = clampedX + 'px';
+            indicator.style.top = padding + 'px';
+          } else if (edgeY >= height - padding) {
+            direction = 'bottom';
+            indicator.style.left = clampedX + 'px';
+            indicator.style.top = (height - padding) + 'px';
+          } else {
+            indicator.style.left = clampedX + 'px';
+            indicator.style.top = clampedY + 'px';
+          }
+          
+          indicator.classList.add(direction);
+          indicator.innerHTML = '<span>' + (ann.order || index + 1) + '</span>';
+          indicator.onclick = () => {
+            window.parent.postMessage({ type: 'annotationClick', annotation: ann }, '*');
+          };
+          annotationsContainer.appendChild(indicator);
+        }
       });
     }
 
@@ -264,11 +407,19 @@ export default function AnnotationViewer({
         annotations = event.data.annotations || [];
         activeAnnotationId = event.data.activeAnnotationId;
         updateAnnotationPositions();
+        // Stop polling once we have annotations
+        if (annotations.length > 0 && annotationPollInterval) {
+          clearInterval(annotationPollInterval);
+          annotationPollInterval = null;
+        }
       } else if (event.data.type === 'setEditMode') {
         editMode = event.data.editMode;
         clickHint.style.display = editMode ? 'block' : 'none';
       }
     });
+
+    // Poll for annotations until we get them
+    let annotationPollInterval = null;
 
     try {
       scene = new THREE.Scene();
@@ -299,6 +450,17 @@ export default function AnnotationViewer({
 
       loadingEl.style.display = 'none';
       window.parent.postMessage({ type: 'loaded' }, '*');
+      
+      // Request annotations from parent after load, with retry polling
+      window.parent.postMessage({ type: 'requestAnnotations' }, '*');
+      annotationPollInterval = setInterval(() => {
+        if (annotations.length === 0) {
+          window.parent.postMessage({ type: 'requestAnnotations' }, '*');
+        } else {
+          clearInterval(annotationPollInterval);
+          annotationPollInterval = null;
+        }
+      }, 500);
 
       // Raycaster for click detection
       const raycaster = new THREE.Raycaster();
@@ -307,34 +469,58 @@ export default function AnnotationViewer({
       renderer.domElement.addEventListener('dblclick', (event) => {
         if (!editMode) return;
         
+        event.preventDefault();
+        event.stopPropagation();
+        
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
         raycaster.setFromCamera(mouse, camera);
         
-        // Cast ray and find intersection point at a reasonable distance
-        const direction = raycaster.ray.direction.clone();
-        const origin = raycaster.ray.origin.clone();
-        const distance = 3; // Default distance from camera
-        const point = origin.add(direction.multiplyScalar(distance));
+        let point;
+        try {
+          // Raycast only against the splatMesh to find the actual surface point
+          const intersects = raycaster.intersectObject(splatMesh, false);
+          
+          if (intersects.length > 0) {
+            point = intersects[0].point;
+          } else {
+            // Fallback: no intersection found, place along ray at a default distance
+            const fallbackDistance = 3;
+            point = raycaster.ray.origin.clone().add(
+              raycaster.ray.direction.clone().multiplyScalar(fallbackDistance)
+            );
+          }
+        } catch (err) {
+          console.warn('Raycast failed, using fallback placement:', err);
+          const fallbackDistance = 3;
+          point = raycaster.ray.origin.clone().add(
+            raycaster.ray.direction.clone().multiplyScalar(fallbackDistance)
+          );
+        }
         
         window.parent.postMessage({ 
           type: 'addAnnotation', 
           position: { x: point.x, y: point.y, z: point.z }
         }, '*');
-      });
+      }, { capture: true });
 
+      let lastCameraUpdate = 0;
       function animate() {
         requestAnimationFrame(animate);
         controls.update(camera);
         renderer.render(scene, camera);
         updateAnnotationPositions();
         
-        // Send camera position to parent
-        window.parent.postMessage({ 
-          type: 'cameraUpdate', 
-          position: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
-        }, '*');
+        // Throttle camera position updates to parent (every 100ms)
+        const now = Date.now();
+        if (now - lastCameraUpdate > 100) {
+          lastCameraUpdate = now;
+          window.parent.postMessage({ 
+            type: 'cameraUpdate', 
+            position: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
+          }, '*');
+        }
       }
       animate();
 
@@ -364,6 +550,15 @@ export default function AnnotationViewer({
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === "loaded") {
         setLoading(false);
+        setIframeReady(true);
+      } else if (event.data.type === "requestAnnotations") {
+        // Iframe is requesting annotations - send them
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "updateAnnotations", annotations: annotationsRef.current, activeAnnotationId: activeAnnotationIdRef.current },
+            "*"
+          );
+        }
       } else if (event.data.type === "error") {
         setError(event.data.message);
         setLoading(false);
@@ -373,6 +568,9 @@ export default function AnnotationViewer({
         onAddAnnotation(event.data.position);
       } else if (event.data.type === "cameraUpdate") {
         setCameraPosition(event.data.position);
+        if (onCameraMoveRef.current) {
+          onCameraMoveRef.current(event.data.position);
+        }
       }
     };
     window.addEventListener("message", handleMessage);

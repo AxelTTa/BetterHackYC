@@ -30,6 +30,15 @@ export async function POST(
       );
     }
 
+    // Auto-calculate order only if not explicitly provided
+    let finalOrder = order;
+    if (order === undefined || order === null) {
+      const existingAnnotations = await db.query.annotation.findMany({
+        where: (a, { eq }) => eq(a.tutorialId, tutorialId),
+      });
+      finalOrder = existingAnnotations.length + 1;
+    }
+
     const [newAnnotation] = await db
       .insert(annotation)
       .values({
@@ -40,7 +49,7 @@ export async function POST(
         x,
         y,
         z,
-        order: order || 1,
+        order: finalOrder,
       })
       .returning();
 
@@ -109,18 +118,20 @@ export async function PUT(
       );
     }
 
+    // Only update fields that were explicitly provided to avoid wiping coordinates
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content;
+    if (x !== undefined) updateData.x = x;
+    if (y !== undefined) updateData.y = y;
+    if (z !== undefined) updateData.z = z;
+    if (order !== undefined) updateData.order = order;
+
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+
     const [updated] = await db
       .update(annotation)
-      .set({
-        title,
-        content,
-        imageUrl: imageUrl || null,
-        x,
-        y,
-        z,
-        order,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(
         and(eq(annotation.id, annotationId), eq(annotation.tutorialId, tutorialId))
       )

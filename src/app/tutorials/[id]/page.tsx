@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -58,13 +58,24 @@ export default function TutorialEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tutorialTitle, setTutorialTitle] = useState("New Tutorial");
+  
+  // Ref to track the real tutorial ID immediately (avoids async state issues)
+  const tutorialIdRef = useRef<string | null>(null);
 
-  // Load tutorial or create new one
+  // Track whether initial load has happened
+  const initialLoadDone = useRef(false);
+
+  // Load tutorial or create new one (runs once on mount)
   useEffect(() => {
+    if (initialLoadDone.current) return;
+    initialLoadDone.current = true;
+
     async function loadData() {
       try {
         if (isNew) {
-          // Creating new tutorial
+          // Creating new tutorial - set ref to "new"
+          tutorialIdRef.current = "new";
+          
           const workspaceId = searchParams.get("workspaceId");
           const worldId = searchParams.get("worldId");
 
@@ -88,7 +99,9 @@ export default function TutorialEditorPage() {
             annotations: [],
           });
         } else {
-          // Load existing tutorial
+          // Load existing tutorial - set ref immediately
+          tutorialIdRef.current = tutorialId;
+          
           const res = await fetch(`/api/tutorials/${tutorialId}`);
           if (!res.ok) {
             setLoading(false);
@@ -118,14 +131,21 @@ export default function TutorialEditorPage() {
     }
 
     loadData();
-  }, [tutorialId, isNew, searchParams]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const saveTutorial = async () => {
+  const saveTutorial = async (skipRedirect = false) => {
     if (!tutorial) return null;
+
+    // Use ref for immediate check (state updates are async)
+    const currentId = tutorialIdRef.current;
+    const isNewTutorial = !currentId || currentId === "new";
+    
+    console.log('[saveTutorial] called, currentId:', currentId, 'isNewTutorial:', isNewTutorial, 'skipRedirect:', skipRedirect);
 
     setSaving(true);
     try {
-      if (isNew) {
+      if (isNewTutorial) {
         // Create new tutorial
         const res = await fetch("/api/tutorials", {
           method: "POST",
@@ -139,12 +159,23 @@ export default function TutorialEditorPage() {
         if (!res.ok) throw new Error("Failed to create tutorial");
 
         const data = await res.json();
-        // Redirect to the new tutorial's edit page
-        router.replace(`/tutorials/${data.tutorial.id}`);
+        
+        // Update ref IMMEDIATELY (before async state update)
+        tutorialIdRef.current = data.tutorial.id;
+        
+        if (skipRedirect) {
+          // Update state without navigation (used when adding annotations to new tutorial)
+          setTutorial({ ...tutorial, id: data.tutorial.id, ...data.tutorial });
+          // Update URL without full navigation
+          window.history.replaceState(null, '', `/tutorials/${data.tutorial.id}`);
+        } else {
+          // Full redirect to the new tutorial's edit page
+          router.replace(`/tutorials/${data.tutorial.id}`);
+        }
         return data.tutorial;
       } else {
         // Update existing tutorial
-        const res = await fetch(`/api/tutorials/${tutorialId}`, {
+        const res = await fetch(`/api/tutorials/${currentId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: tutorialTitle }),
@@ -165,19 +196,26 @@ export default function TutorialEditorPage() {
   };
 
   const handleAddAnnotation = async (position: { x: number; y: number; z: number }) => {
-    // If this is a new tutorial, save it first
-    let currentTutorialId = tutorialId;
-    if (isNew) {
-      const saved = await saveTutorial();
+    // Use ref for immediate check (state updates are async)
+    const currentId = tutorialIdRef.current;
+    const needsCreate = !currentId || currentId === "new";
+    let currentTutorialId = currentId;
+    
+    console.log('[handleAddAnnotation] called, ref:', currentId, 'needsCreate:', needsCreate);
+    
+    if (needsCreate) {
+      // Save tutorial first (without redirect to preserve 3D scene)
+      const saved = await saveTutorial(true); // skipRedirect = true
       if (!saved) return;
       currentTutorialId = saved.id;
     }
 
-    const newAnnotation: Partial<Annotation> = {
+    const newAnnotation: Partial<Annotation> & { tutorialId?: string } = {
       ...position,
       title: "",
       content: "",
       order: annotations.length + 1,
+      tutorialId: currentTutorialId!, // Store the tutorial ID with the annotation
     };
     setEditingAnnotation(newAnnotation);
     setIsNewAnnotation(true);
@@ -185,17 +223,19 @@ export default function TutorialEditorPage() {
   };
 
   const handleSaveAnnotation = async (data: Partial<Annotation>) => {
-    const currentTutorialId = tutorial?.id === "new" ? null : tutorial?.id;
+    // Use tutorialId from editingAnnotation if available (set during handleAddAnnotation)
+    // Fall back to ref (immediate) then state
+    const editingWithTutorialId = editingAnnotation as (Partial<Annotation> & { tutorialId?: string }) | null;
+    let targetTutorialId = editingWithTutorialId?.tutorialId || tutorialIdRef.current;
     
-    if (!currentTutorialId || currentTutorialId === "new") {
-      // Save tutorial first if new
-      const saved = await saveTutorial();
+    console.log('[handleSaveAnnotation] called, editingAnnotation.tutorialId:', editingWithTutorialId?.tutorialId, 'ref:', tutorialIdRef.current, 'resolved:', targetTutorialId);
+    
+    if (!targetTutorialId || targetTutorialId === "new") {
+      // Save tutorial first if new, and capture the returned ID (without redirect)
+      const saved = await saveTutorial(true); // skipRedirect = true
       if (!saved) return;
+      targetTutorialId = saved.id;
     }
-
-    const targetTutorialId = currentTutorialId && currentTutorialId !== "new" 
-      ? currentTutorialId 
-      : tutorial?.id;
 
     if (!targetTutorialId || targetTutorialId === "new") return;
 
@@ -425,6 +465,11 @@ export default function TutorialEditorPage() {
                   annotations={annotations}
                   activeId={activeAnnotation?.id || null}
                   onSelect={handleAnnotationClick}
+                  onEdit={editMode ? (annotation) => {
+                    setEditingAnnotation(annotation);
+                    setIsNewAnnotation(false);
+                  } : undefined}
+                  editMode={editMode}
                 />
               )}
             </div>
