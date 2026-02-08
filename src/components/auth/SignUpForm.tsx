@@ -19,18 +19,20 @@ export function SignUpForm() {
     setLoading(true);
 
     try {
-      const result = await signUp.email({
-        email,
-        password,
-        name,
-      }, {
-        onSuccess: async () => {
-          // Update role after signup via API if needed
-          // For now, role is set via additionalFields
-          router.push("/dashboard");
-          router.refresh();
+      const result = await signUp.email(
+        {
+          email,
+          password,
+          name,
+          role,
         },
-      });
+        {
+          onSuccess: async () => {
+            router.push("/dashboard");
+            router.refresh();
+          },
+        }
+      );
 
       if (result.error) {
         setError(result.error.message || "Sign up failed");
@@ -43,18 +45,18 @@ export function SignUpForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-8 bg-gray-800 rounded-xl border border-gray-700">
+    <div className="w-full max-w-md mx-auto p-8 glass-card">
       <h1 className="text-2xl font-bold mb-6 text-center text-white">Create Account</h1>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
+          <div className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-none backdrop-blur-sm">
             {error}
           </div>
         )}
 
         <div>
-          <label htmlFor="name" className="block text-sm font-medium mb-1 text-gray-300">
+          <label htmlFor="name" className="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
             Full Name
           </label>
           <input
@@ -63,13 +65,13 @@ export function SignUpForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400"
+            className="w-full px-3 py-2 glass-input placeholder-[var(--text-muted)]"
             placeholder="John Doe"
           />
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-300">
+          <label htmlFor="email" className="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
             Email
           </label>
           <input
@@ -78,13 +80,13 @@ export function SignUpForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400"
+            className="w-full px-3 py-2 glass-input placeholder-[var(--text-muted)]"
             placeholder="you@example.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-300">
+          <label htmlFor="password" className="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
             Password
           </label>
           <input
@@ -94,39 +96,39 @@ export function SignUpForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
-            className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400"
+            className="w-full px-3 py-2 glass-input placeholder-[var(--text-muted)]"
             placeholder="••••••••"
           />
-          <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">Minimum 8 characters</p>
         </div>
 
         <div>
-          <label htmlFor="role" className="block text-sm font-medium mb-1 text-gray-300">
+          <label htmlFor="role" className="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
             Role
           </label>
           <select
             id="role"
             value={role}
             onChange={(e) => setRole(e.target.value as "manager" | "employee")}
-            className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
+            className="w-full px-3 py-2 glass-input text-white appearance-none"
           >
-            <option value="employee">Employee</option>
-            <option value="manager">Manager</option>
+            <option value="employee" className="bg-gray-900">Employee</option>
+            <option value="manager" className="bg-gray-900">Manager</option>
           </select>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
+          className="w-full py-2 px-4 btn-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Creating account..." : "Sign Up"}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-400">
+      <p className="mt-4 text-center text-sm text-[var(--text-secondary)]">
         Already have an account?{" "}
-        <a href="/auth/signin" className="text-blue-400 hover:underline">
+        <a href="/auth/signin" className="text-amber-400 hover:text-amber-300 hover:underline transition-colors">
           Sign in
         </a>
       </p>

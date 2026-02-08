@@ -257,6 +257,7 @@ export default function TutorialEditorPage() {
           body: JSON.stringify({
             title: data.title || "Untitled",
             content: data.content || "",
+            imageUrl: data.imageUrl || null,
             x: data.x,
             y: data.y,
             z: data.z,
@@ -333,7 +334,7 @@ export default function TutorialEditorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-white">Loading...</div>
       </div>
     );
@@ -341,32 +342,32 @@ export default function TutorialEditorPage() {
 
   if (!world || !tutorial) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white">
-        <header className="border-b border-gray-700">
+      <div className="min-h-screen text-white">
+        <header className="border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-4 py-4">
             <Link href="/dashboard" className="flex items-center gap-2 w-fit">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
+              <div className="w-8 h-8 bg-amber-600 rounded-none flex items-center justify-center font-bold shadow-[0_0_15px_rgba(37,99,235,0.5)]">
                 3D
               </div>
-              <span className="text-xl font-bold">TrainSpace</span>
+              <span className="text-xl font-bold tracking-tight">TrainSpace</span>
             </Link>
           </div>
         </header>
         <main className="max-w-2xl mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">No 3D Model Loaded</h1>
-          <p className="text-gray-400 mb-8">
+          <p className="text-[var(--text-secondary)] mb-8">
             To create a tutorial, you need a workspace with a 3D model first.
           </p>
           <div className="flex gap-4 justify-center">
             <Link
               href="/workspaces/new"
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+              className="px-6 py-3 btn-primary font-medium transition-all"
             >
               Create Workspace
             </Link>
             <Link
               href="/dashboard"
-              className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+              className="px-6 py-3 glass-button hover:bg-[var(--bg-card-hover)] font-medium transition-colors"
             >
               Back to Dashboard
             </Link>
@@ -377,13 +378,13 @@ export default function TutorialEditorPage() {
   }
 
   return (
-    <div className="h-screen bg-gray-900 text-white flex flex-col">
+    <div className="h-screen text-white flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="border-b border-gray-700 flex-shrink-0">
+      <header className="border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] backdrop-blur-md flex-shrink-0 z-50">
         <div className="px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm">
+              <div className="w-8 h-8 bg-amber-600 rounded-none flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(37,99,235,0.5)]">
                 3D
               </div>
             </Link>
@@ -392,29 +393,29 @@ export default function TutorialEditorPage() {
                 type="text"
                 value={tutorialTitle}
                 onChange={(e) => setTutorialTitle(e.target.value)}
-                onBlur={() => tutorial?.id && tutorial.id !== "new" && saveTutorial()}
-                className="bg-transparent font-semibold border-b border-transparent hover:border-gray-600 focus:border-blue-500 focus:outline-none px-1"
+                onBlur={() => !isNew && saveTutorial()}
+                className="bg-transparent font-semibold border-b border-transparent hover:border-[var(--border-medium)] focus:border-amber-500 focus:outline-none px-1 transition-colors"
                 placeholder="Tutorial title..."
               />
-              <p className="text-xs text-gray-400">{annotations.length} annotations</p>
+              <p className="text-xs text-[var(--text-secondary)]">{annotations.length} annotations</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {saving && <span className="text-sm text-gray-400">Saving...</span>}
+            {saving && <span className="text-sm text-[var(--text-muted)]">Saving...</span>}
             <button
               onClick={() => setEditMode(!editMode)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-none text-sm font-medium transition-all ${
                 editMode
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-300"
+                  ? "bg-amber-600 text-white shadow-[0_0_10px_rgba(245,158,11,0.35)]"
+                  : "glass-button hover:bg-[var(--bg-card-hover)]"
               }`}
             >
               {editMode ? "Edit Mode" : "Preview Mode"}
             </button>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-2 glass-button hover:bg-[var(--bg-card-hover)] rounded-none transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
@@ -422,7 +423,7 @@ export default function TutorialEditorPage() {
             </button>
             <Link
               href={tutorial.workspaceId ? `/workspaces/${tutorial.workspaceId}` : "/dashboard"}
-              className="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
+              className="px-4 py-1.5 glass-button hover:bg-[var(--bg-card-hover)] rounded-none text-sm transition-colors"
             >
               Done
             </Link>
@@ -431,7 +432,7 @@ export default function TutorialEditorPage() {
       </header>
 
       {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* 3D Viewer */}
         <div className="flex-1 relative">
           <AnnotationViewer
@@ -446,10 +447,10 @@ export default function TutorialEditorPage() {
 
         {/* Sidebar */}
         {sidebarOpen && (
-          <div className="w-80 border-l border-gray-700 bg-gray-900 flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-gray-700">
+          <div className="w-80 border-l border-[var(--border-subtle)] bg-[var(--bg-panel)] backdrop-blur-md flex flex-col overflow-hidden absolute right-0 top-0 bottom-0 z-40 shadow-xl">
+            <div className="p-4 border-b border-[var(--border-subtle)]">
               <h2 className="font-semibold">Annotations</h2>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-[var(--text-secondary)] mt-1">
                 {editMode
                   ? "Double-click in 3D view to add"
                   : "Click to view details"}
@@ -484,15 +485,22 @@ export default function TutorialEditorPage() {
 
             {/* Annotation detail view (when not editing) */}
             {!editingAnnotation && activeAnnotation && !editMode && (
-              <div className="border-t border-gray-700 p-4 bg-gray-800">
+              <div className="border-t border-[var(--border-subtle)] p-4 bg-[var(--bg-card)]">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-xs font-bold">
+                  <span className="w-6 h-6 bg-amber-600 rounded-none flex items-center justify-center text-xs font-bold shadow-sm">
                     {activeAnnotation.order}
                   </span>
                   <h3 className="font-semibold">{activeAnnotation.title}</h3>
                 </div>
+                {activeAnnotation.imageUrl && (
+                  <img
+                    src={activeAnnotation.imageUrl}
+                    alt={`${activeAnnotation.title} reference`}
+                    className="w-full max-h-56 object-contain rounded-none border border-[var(--border-subtle)] bg-black/30 mb-3"
+                  />
+                )}
                 {activeAnnotation.content && (
-                  <p className="text-sm text-gray-300">{activeAnnotation.content}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{activeAnnotation.content}</p>
                 )}
               </div>
             )}

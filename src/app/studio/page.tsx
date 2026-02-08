@@ -331,7 +331,7 @@ export default function Home() {
         {/* Input Section */}
         <div className="max-w-2xl mx-auto">
           {/* API Key Section */}
-          <div className="bg-gray-800/50 backdrop-blur rounded-2xl p-6 shadow-xl border border-gray-700 mb-6">
+          <div className="bg-gray-800/50 backdrop-blur rounded-none p-6 shadow-xl border border-gray-700 mb-6">
             <div className="flex items-center justify-between mb-2">
               <label htmlFor="api-key" className="block text-sm font-medium text-gray-300">
                 World Labs API Key
@@ -340,7 +340,7 @@ export default function Home() {
                 href="https://platform.worldlabs.ai/api-keys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:text-blue-300"
+                className="text-xs text-amber-400 hover:text-amber-300"
               >
                 Get your API key →
               </a>
@@ -352,7 +352,7 @@ export default function Home() {
                 value={apiKey}
                 onChange={(e) => handleApiKeyChange(e.target.value)}
                 placeholder="Enter your WLT API key..."
-                className="w-full px-4 py-3 pr-20 bg-gray-900/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                className="w-full px-4 py-3 pr-20 bg-gray-900/50 border border-gray-600 rounded-none text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent font-mono text-sm"
                 disabled={status === "generating"}
               />
               <button
@@ -368,7 +368,7 @@ export default function Home() {
             )}
           </div>
 
-          <div className="bg-gray-800/50 backdrop-blur rounded-2xl p-6 shadow-xl border border-gray-700">
+          <div className="bg-gray-800/50 backdrop-blur rounded-none p-6 shadow-xl border border-gray-700">
             <div className="space-y-4">
               <div>
                 <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">
@@ -380,7 +380,7 @@ export default function Home() {
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={selectedImages.length > 0 ? "Optional: Add a description to guide the generation..." : "A mystical forest with glowing mushrooms and fireflies at twilight..."}
-                  className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-none text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                   rows={3}
                   disabled={status === "generating" || status === "uploading"}
                 />
@@ -406,7 +406,7 @@ export default function Home() {
                 {imagePreviews.length > 0 && (
                   <div className="grid grid-cols-4 gap-2 mb-3">
                     {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden group">
+                      <div key={index} className="relative aspect-square rounded-none overflow-hidden group">
                         <img
                           src={preview}
                           alt={`Selected ${index + 1}`}
@@ -414,7 +414,7 @@ export default function Home() {
                         />
                         <button
                           onClick={() => removeImage(index)}
-                          className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-600 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-600 rounded-none text-white opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -432,7 +432,7 @@ export default function Home() {
                 {selectedImages.length < 8 && (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-600 rounded-xl p-4 text-center cursor-pointer hover:border-gray-500 hover:bg-gray-800/30 transition-colors"
+                    className="border-2 border-dashed border-gray-600 rounded-none p-4 text-center cursor-pointer hover:border-gray-500 hover:bg-gray-800/30 transition-colors"
                   >
                     <svg className="w-8 h-8 mx-auto text-gray-500 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
@@ -456,7 +456,7 @@ export default function Home() {
                 />
                 
                 {selectedImages.length > 1 && (
-                  <p className="text-xs text-blue-400 mt-2">
+                  <p className="text-xs text-amber-400 mt-2">
                     💡 Multiple images will be combined into a 360° world
                   </p>
                 )}
@@ -468,7 +468,7 @@ export default function Home() {
                     type="checkbox"
                     checked={useDraft}
                     onChange={(e) => setUseDraft(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                    className="w-4 h-4 rounded-none border-gray-600 bg-gray-700 text-amber-500 focus:ring-amber-500"
                     disabled={status === "generating" || status === "uploading"}
                   />
                   <span className="text-sm">
@@ -479,7 +479,7 @@ export default function Home() {
                 <button
                   onClick={handleGenerate}
                   disabled={(!prompt.trim() && selectedImages.length === 0) || !apiKey.trim() || status === "generating" || status === "uploading"}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center space-x-2"
+                  className="px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-none transition-colors flex items-center space-x-2"
                 >
                   {status === "uploading" ? (
                     <>
@@ -534,12 +534,12 @@ export default function Home() {
             {/* Status Message */}
             {statusMessage && (
               <div
-                className={`mt-4 p-3 rounded-lg ${
+                className={`mt-4 p-3 rounded-none ${
                   status === "error"
                     ? "bg-red-900/50 text-red-300"
                     : status === "complete"
                     ? "bg-green-900/50 text-green-300"
-                    : "bg-blue-900/50 text-blue-300"
+                    : "bg-amber-900/30 text-amber-300"
                 }`}
               >
                 {statusMessage}
@@ -549,7 +549,7 @@ export default function Home() {
 
           {/* Generated World Card */}
           {world && !showViewer && (
-            <div className="mt-8 bg-gray-800/50 backdrop-blur rounded-2xl overflow-hidden shadow-xl border border-gray-700">
+            <div className="mt-8 bg-gray-800/50 backdrop-blur rounded-none overflow-hidden shadow-xl border border-gray-700">
               <div className="relative">
                 <img
                   src={world.assets.thumbnail_url}
@@ -569,13 +569,13 @@ export default function Home() {
               <div className="p-4 flex flex-wrap gap-3">
                 <button
                   onClick={() => setShowViewer(true)}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-none transition-colors"
                 >
                   View in 3D
                 </button>
                 <a
                   href={`/tutorials/new?worldId=${world.id}`}
-                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors text-center"
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-none transition-colors text-center"
                 >
                   Create Tutorial
                 </a>
@@ -583,7 +583,7 @@ export default function Home() {
                   href={world.world_marble_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-none transition-colors"
                 >
                   Open in Marble ↗
                 </a>
@@ -606,7 +606,7 @@ export default function Home() {
                   key={example}
                   onClick={() => setPrompt(example)}
                   disabled={status === "generating" || status === "loading" || status === "uploading"}
-                  className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 text-sm rounded-full transition-colors"
+                  className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 text-sm rounded-none transition-colors"
                 >
                   {example}
                 </button>
@@ -615,7 +615,7 @@ export default function Home() {
           </div>
 
           {/* Load Existing World */}
-          <div className="mt-8 bg-gray-800/30 rounded-xl p-4 border border-gray-700/50">
+          <div className="mt-8 bg-gray-800/30 rounded-none p-4 border border-gray-700/50">
             <h3 className="text-gray-400 text-sm font-medium mb-3">Or load an existing world:</h3>
             <div className="flex gap-2">
               <input
@@ -623,13 +623,13 @@ export default function Home() {
                 value={worldIdInput}
                 onChange={(e) => setWorldIdInput(e.target.value)}
                 placeholder="World ID (e.g., cd34826d-72bf-493a-8f31-52b816a5566d)"
-                className="flex-1 px-3 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 bg-gray-900/50 border border-gray-600 rounded-none text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                 disabled={status === "generating" || status === "loading" || status === "uploading"}
               />
               <button
                 onClick={() => loadExistingWorld(worldIdInput)}
                 disabled={!worldIdInput.trim() || !apiKey.trim() || status === "generating" || status === "loading" || status === "uploading"}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed text-white text-sm rounded-none transition-colors"
               >
                 Load
               </button>

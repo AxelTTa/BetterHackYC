@@ -22,7 +22,7 @@ export default function AnnotationList({
 
   if (annotations.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-[var(--text-muted)]">
         <svg
           className="w-12 h-12 mx-auto mb-3 opacity-50"
           fill="none"
@@ -53,42 +53,40 @@ export default function AnnotationList({
       {sortedAnnotations.map((annotation) => (
         <div
           key={annotation.id}
-          className={`w-full text-left p-3 rounded-lg border transition-colors ${
+          onClick={() => onSelect(annotation)}
+          className={`w-full text-left p-3 rounded-none border transition-all ${
             activeId === annotation.id
-              ? "bg-blue-600/20 border-blue-500 text-white"
-              : "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700"
+              ? "bg-amber-600/20 border-amber-500 text-white shadow-[0_0_10px_rgba(245,158,11,0.25)]"
+              : "glass-button border-transparent hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)]"
           }`}
         >
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => onSelect(annotation)}
-              className="flex items-center gap-3 flex-1 min-w-0 text-left"
+            <span
+              className={`w-7 h-7 rounded-none flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors ${
+                activeId === annotation.id
+                  ? "bg-amber-600 text-black"
+                  : "bg-[var(--bg-input)] text-[var(--text-muted)]"
+              }`}
             >
-              <span
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                  activeId === annotation.id
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-700 text-gray-300"
-                }`}
-              >
-                {annotation.order}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{annotation.title}</p>
-                {annotation.content && (
-                  <p className="text-sm text-gray-500 truncate">
-                    {annotation.content}
-                  </p>
-                )}
-              </div>
-            </button>
+              {annotation.order}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className={`font-medium truncate ${activeId === annotation.id ? "text-amber-100" : ""}`}>
+                {annotation.title}
+              </p>
+              {annotation.content && (
+                <p className="text-sm text-[var(--text-muted)] truncate">
+                  {annotation.content}
+                </p>
+              )}
+            </div>
             {editMode && onEdit && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onEdit(annotation);
                 }}
-                className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-lg transition-colors flex-shrink-0"
+                className="p-2 text-[var(--text-muted)] hover:text-white hover:bg-[var(--bg-card-hover)] rounded-none transition-colors flex-shrink-0"
                 title="Edit annotation"
               >
                 <svg

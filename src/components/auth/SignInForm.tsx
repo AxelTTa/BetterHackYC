@@ -36,18 +36,18 @@ export function SignInForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-8 bg-gray-800 rounded-xl border border-gray-700">
+    <div className="w-full max-w-md mx-auto p-8 glass-card">
       <h1 className="text-2xl font-bold mb-6 text-center text-white">Sign In</h1>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
+          <div className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-none backdrop-blur-sm">
             {error}
           </div>
         )}
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-300">
+          <label htmlFor="email" className="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
             Email
           </label>
           <input
@@ -56,13 +56,13 @@ export function SignInForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400"
+            className="w-full px-3 py-2 glass-input placeholder-[var(--text-muted)]"
             placeholder="you@example.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-300">
+          <label htmlFor="password" className="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
             Password
           </label>
           <input
@@ -71,7 +71,7 @@ export function SignInForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400"
+            className="w-full px-3 py-2 glass-input placeholder-[var(--text-muted)]"
             placeholder="••••••••"
           />
         </div>
@@ -79,15 +79,15 @@ export function SignInForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
+          className="w-full py-2 px-4 btn-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-400">
+      <p className="mt-4 text-center text-sm text-[var(--text-secondary)]">
         Don&apos;t have an account?{" "}
-        <a href="/auth/signup" className="text-blue-400 hover:underline">
+        <a href="/auth/signup" className="text-amber-400 hover:text-amber-300 hover:underline transition-colors">
           Sign up
         </a>
       </p>

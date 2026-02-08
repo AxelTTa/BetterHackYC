@@ -102,6 +102,7 @@ export const annotation = pgTable("annotation", {
     .references(() => tutorial.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   content: text("content").notNull(),
+  imageUrl: text("image_url"),
   // 3D position coordinates
   x: real("x").notNull(),
   y: real("y").notNull(),

@@ -21,7 +21,7 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { title, content, x, y, z, order } = body;
+    const { title, content, x, y, z, order, imageUrl } = body;
 
     if (!title || x === undefined || y === undefined || z === undefined) {
       return NextResponse.json(
@@ -45,6 +45,7 @@ export async function POST(
         tutorialId,
         title,
         content: content || "",
+        imageUrl: imageUrl || null,
         x,
         y,
         z,
@@ -108,7 +109,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { annotationId, title, content, x, y, z, order } = body;
+    const { annotationId, title, content, x, y, z, order, imageUrl } = body;
 
     if (!annotationId) {
       return NextResponse.json(
@@ -125,6 +126,8 @@ export async function PUT(
     if (y !== undefined) updateData.y = y;
     if (z !== undefined) updateData.z = z;
     if (order !== undefined) updateData.order = order;
+
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
 
     const [updated] = await db
       .update(annotation)

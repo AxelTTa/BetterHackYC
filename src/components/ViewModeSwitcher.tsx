@@ -8,7 +8,7 @@ export function ViewModeSwitcher() {
   if (!isManager) return null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-lg border border-gray-700">
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-none border border-gray-700">
       <span className="text-xs text-gray-400">View as:</span>
       <select
         value={viewMode}

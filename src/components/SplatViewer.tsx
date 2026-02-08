@@ -81,13 +81,13 @@ export default function SplatViewer({ world, onClose, triggerZones = [] }: Splat
       width: 200px;
       height: 4px;
       background: #333;
-      border-radius: 2px;
+      border-radius: 0;
       margin-top: 10px;
       overflow: hidden;
     }
     #progress-bar {
       height: 100%;
-      background: #3b82f6;
+      background: #f0a500;
       width: 0%;
       transition: width 0.3s;
     }
@@ -100,7 +100,7 @@ export default function SplatViewer({ world, onClose, triggerZones = [] }: Splat
       font-family: 'Courier New', monospace;
       font-size: 12px;
       padding: 10px 14px;
-      border-radius: 8px;
+      border-radius: 0;
       border: 1px solid rgba(34, 211, 238, 0.3);
       pointer-events: none;
       z-index: 100;
@@ -350,7 +350,7 @@ export default function SplatViewer({ world, onClose, triggerZones = [] }: Splat
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="text-white hover:text-gray-300 p-2 rounded-none hover:bg-white/10 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -367,7 +367,7 @@ export default function SplatViewer({ world, onClose, triggerZones = [] }: Splat
             <p className="text-sm text-gray-400 mt-2">{error}</p>
             <button
               onClick={onClose}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-none hover:bg-red-700"
             >
               Close
             </button>
@@ -386,14 +386,14 @@ export default function SplatViewer({ world, onClose, triggerZones = [] }: Splat
       {/* Trigger popup overlay */}
       {activePopup && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 animate-in fade-in">
-          <div className="bg-gray-900/95 backdrop-blur-lg border border-cyan-500/30 rounded-2xl p-6 max-w-md shadow-2xl shadow-cyan-500/10">
+          <div className="bg-gray-900/95 backdrop-blur-lg border border-amber-500/40 rounded-none p-6 max-w-md shadow-2xl shadow-amber-500/15">
             <div className="flex items-start justify-between mb-3">
               <h3 className="text-white text-lg font-semibold pr-4">
                 {activePopup.title}
               </h3>
               <button
                 onClick={dismissPopup}
-                className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors flex-shrink-0"
+                className="text-gray-400 hover:text-white p-1 rounded-none hover:bg-white/10 transition-colors flex-shrink-0"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -404,7 +404,7 @@ export default function SplatViewer({ world, onClose, triggerZones = [] }: Splat
               {activePopup.description}
             </p>
             <div className="mt-4 pt-3 border-t border-gray-700/50">
-              <p className="text-cyan-400/60 text-xs font-mono">
+              <p className="text-amber-400/70 text-xs font-mono">
                 Zone: {activePopup.triggerId}
               </p>
             </div>
@@ -422,7 +422,7 @@ export default function SplatViewer({ world, onClose, triggerZones = [] }: Splat
         href={world.world_marble_url}
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute bottom-4 right-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+        className="absolute bottom-4 right-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-none transition-colors"
       >
         Open in Marble
       </a>

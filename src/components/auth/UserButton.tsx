@@ -53,7 +53,7 @@ export function UserButton() {
 
   if (isPending) {
     return (
-      <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse" />
+      <div className="h-10 w-10 rounded-none bg-gray-200 animate-pulse" />
     );
   }
 
@@ -61,7 +61,7 @@ export function UserButton() {
     return (
       <a
         href="/auth/signin"
-        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+        className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-none hover:bg-amber-700 transition-colors"
       >
         Sign In
       </a>
@@ -72,7 +72,7 @@ export function UserButton() {
     <div className="flex items-center gap-3">
       {/* View Mode Indicator for Managers */}
       {isManager && viewMode === "employee" && (
-        <span className="px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded-full border border-yellow-600/50">
+        <span className="px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded-none border border-yellow-600/50">
           Viewing as Employee
         </span>
       )}
@@ -84,12 +84,12 @@ export function UserButton() {
       <div className="relative" ref={dropdownRef}>
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-medium hover:bg-blue-700 transition-colors"
+          className="h-10 w-10 rounded-none bg-amber-600 text-white flex items-center justify-center font-medium hover:bg-amber-700 transition-colors"
         >
           {user.name?.charAt(0).toUpperCase() || "U"}
         </button>
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-lg shadow-lg py-1 z-50 border border-gray-700">
+          <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-none shadow-lg py-1 z-50 border border-gray-700">
             <div className="px-4 py-3 border-b border-gray-700">
               <p className="text-sm font-medium text-white">{user.name}</p>
               <p className="text-xs text-gray-400">{user.email}</p>
@@ -103,9 +103,9 @@ export function UserButton() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleViewModeChange("manager")}
-                    className={`flex-1 px-3 py-1.5 text-xs rounded-md transition-colors ${
+                    className={`flex-1 px-3 py-1.5 text-xs rounded-none transition-colors ${
                       viewMode === "manager"
-                        ? "bg-blue-600 text-white"
+                        ? "bg-amber-600 text-white"
                         : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                     }`}
                   >
@@ -113,7 +113,7 @@ export function UserButton() {
                   </button>
                   <button
                     onClick={() => handleViewModeChange("employee")}
-                    className={`flex-1 px-3 py-1.5 text-xs rounded-md transition-colors ${
+                    className={`flex-1 px-3 py-1.5 text-xs rounded-none transition-colors ${
                       viewMode === "employee"
                         ? "bg-yellow-600 text-white"
                         : "bg-gray-700 text-gray-300 hover:bg-gray-600"

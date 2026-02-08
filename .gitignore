@@ -63,3 +63,6 @@ Thumbs.db
 
 # Stakpak
 .stakpak/session*
+
+# User uploads (stored locally / use external storage in production)
+public/uploads/

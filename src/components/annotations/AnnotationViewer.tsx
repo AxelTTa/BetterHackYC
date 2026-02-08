@@ -6,6 +6,7 @@ export interface Annotation {
   id: string;
   title: string;
   content: string;
+  imageUrl?: string | null;
   x: number;
   y: number;
   z: number;
@@ -128,13 +129,13 @@ export default function AnnotationViewer({
       width: 200px;
       height: 4px;
       background: #333;
-      border-radius: 2px;
+      border-radius: 0;
       margin-top: 10px;
       overflow: hidden;
     }
     #progress-bar {
       height: 100%;
-      background: #3b82f6;
+      background: #f0a500;
       width: 0%;
       transition: width 0.3s;
     }
@@ -142,9 +143,9 @@ export default function AnnotationViewer({
       position: absolute;
       width: 32px;
       height: 32px;
-      background: #3b82f6;
+      background: rgba(245, 158, 11, 0.9);
       border: 2px solid white;
-      border-radius: 50%;
+      border-radius: 0;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -153,47 +154,75 @@ export default function AnnotationViewer({
       font-size: 14px;
       cursor: pointer;
       transform: translate(-50%, -50%);
-      transition: all 0.2s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
       z-index: 100;
+      backdrop-filter: blur(4px);
     }
     .annotation-marker:hover {
       transform: translate(-50%, -50%) scale(1.2);
-      background: #2563eb;
+      background: #f59e0b;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
     }
     .annotation-marker.active {
       background: #10b981;
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
       transform: translate(-50%, -50%) scale(1.3);
+    }
+    .annotation-marker.has-image {
+      background: #f59e0b;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+    }
+    .annotation-photo {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 16px;
+      height: 16px;
+      border-radius: 0;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
     }
     .annotation-label {
       position: absolute;
       left: 40px;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(0,0,0,0.8);
+      background: rgba(15, 23, 42, 0.8);
       color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 0;
+      font-size: 13px;
+      font-weight: 500;
       white-space: nowrap;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .annotation-marker:hover .annotation-label {
       opacity: 1;
     }
     #click-hint {
       position: fixed;
-      bottom: 20px;
+      bottom: 30px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(59, 130, 246, 0.9);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.8);
+      color: #e2e8f0;
+      padding: 10px 20px;
+      border-radius: 0;
       font-size: 14px;
       display: none;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .offscreen-indicator {
       position: fixed;
@@ -264,7 +293,7 @@ export default function AnnotationViewer({
     <div id="percent">0%</div>
   </div>
   <div id="annotations-container"></div>
-  <div id="click-hint">Click anywhere in the 3D scene to place an annotation</div>
+  <div id="click-hint">Double-click anywhere to place an annotation</div>
   <script type="module">
     import * as THREE from "three";
     import { SparkRenderer, SplatMesh, SplatLoader, SparkControls } from "@sparkjsdev/spark";
@@ -308,10 +337,15 @@ export default function AnnotationViewer({
         
         if (!isOffScreen) {
           const marker = document.createElement('div');
-          marker.className = 'annotation-marker' + (isActive ? ' active' : '');
+          const hasImage = Boolean(ann.imageUrl);
+          marker.className = 'annotation-marker' 
+            + (ann.id === activeAnnotationId ? ' active' : '') 
+            + (hasImage ? ' has-image' : '');
           marker.style.left = screenX + 'px';
           marker.style.top = screenY + 'px';
-          marker.innerHTML = '<span>' + (ann.order || index + 1) + '</span><div class="annotation-label">' + ann.title + '</div>';
+          marker.innerHTML = '<span>' + (ann.order || index + 1) + '</span>'
+            + (hasImage ? '<span class="annotation-photo">📷</span>' : '')
+            + '<div class="annotation-label">' + ann.title + '</div>';
           marker.onclick = () => {
             window.parent.postMessage({ type: 'annotationClick', annotation: ann }, '*');
           };
@@ -567,14 +601,14 @@ export default function AnnotationViewer({
                 {world.display_name || "3D Workspace"}
               </h2>
               {editMode && (
-                <p className="text-blue-400 text-sm mt-1">
+                <p className="text-amber-400 text-sm mt-1">
                   Edit Mode: Double-click to add annotations
                 </p>
               )}
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white/10 transition-colors"
+              className="text-white hover:text-gray-300 p-2 rounded-none hover:bg-white/10 transition-colors"
             >
               <svg
                 className="w-6 h-6"

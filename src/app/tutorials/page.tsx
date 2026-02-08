@@ -46,7 +46,7 @@ export default function TutorialsPage() {
       <header className="border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
+            <div className="w-8 h-8 bg-amber-600 rounded-none flex items-center justify-center font-bold">
               3D
             </div>
             <span className="text-xl font-bold">TrainSpace</span>
@@ -71,7 +71,7 @@ export default function TutorialsPage() {
           </div>
           <Link
             href="/dashboard"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 rounded-none font-medium transition-colors"
           >
             + Create Tutorial
           </Link>
@@ -80,7 +80,7 @@ export default function TutorialsPage() {
         {loading ? (
           <div className="text-center py-12 text-gray-400">Loading tutorials...</div>
         ) : tutorials.length === 0 ? (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-12 text-center">
+          <div className="bg-gray-800 rounded-none border border-gray-700 p-12 text-center">
             <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
@@ -88,7 +88,7 @@ export default function TutorialsPage() {
             <p className="text-gray-400 mb-6">Create your first tutorial from a workspace</p>
             <Link
               href="/dashboard"
-              className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+              className="inline-block px-6 py-3 bg-amber-600 hover:bg-amber-700 rounded-none font-medium transition-colors"
             >
               Go to Dashboard
             </Link>
@@ -98,7 +98,7 @@ export default function TutorialsPage() {
             {tutorials.map((tutorial) => (
               <div
                 key={tutorial.id}
-                className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-gray-600 transition-colors"
+                className="bg-gray-800 rounded-none border border-gray-700 overflow-hidden hover:border-gray-600 transition-colors"
               >
                 {/* Thumbnail */}
                 <div className="h-40 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
@@ -123,7 +123,7 @@ export default function TutorialsPage() {
                   <div className="flex gap-2">
                     <Link
                       href={`/tutorials/${tutorial.id}`}
-                      className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-center transition-colors"
+                      className="flex-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 rounded-none text-sm font-medium text-center transition-colors"
                     >
                       Edit
                     </Link>
@@ -132,7 +132,7 @@ export default function TutorialsPage() {
                         navigator.clipboard.writeText(`${window.location.origin}/share/${tutorial.shareLink}`);
                         alert("Share link copied!");
                       }}
-                      className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
+                      className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-none text-sm transition-colors"
                       title="Copy share link"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

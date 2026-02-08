@@ -1,38 +1,164 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  /* 
+    Factorio / Satisfactory – industrial control-panel aesthetic
+    Dark panels, orange/amber accents, technical UI
+  */
+  
+  /* Backgrounds – dark factory floor */
+  --bg-app: #0c0e0f;
+  --bg-app-grid: linear-gradient(rgba(255, 165, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 165, 0, 0.02) 1px, transparent 1px);
+  --bg-panel: rgba(18, 20, 22, 0.95);
+  --bg-card: rgba(24, 26, 28, 0.98);
+  --bg-card-hover: rgba(32, 35, 38, 0.98);
+  --bg-input: rgba(12, 14, 15, 0.9);
+  
+  /* Borders – industrial panel edges */
+  --border-subtle: rgba(255, 165, 0, 0.12);
+  --border-medium: rgba(255, 165, 0, 0.2);
+  --border-strong: rgba(255, 165, 0, 0.4);
+  
+  /* Text */
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-muted: #5f6368;
+  
+  /* Accents – Factorio orange / Satisfactory amber */
+  --accent-primary: #f0a500;
+  --accent-glow: rgba(240, 165, 0, 0.4);
+  --accent-secondary: #e87722;
+  
+  /* Effects */
+  --glass-blur: 8px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 165, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 165, 0, 0.15);
+  
+  /* Radii - none */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg-app);
+  --color-foreground: var(--text-primary);
+  
+  /* Extend Tailwind colors with our tokens */
+  --color-glass-panel: var(--bg-panel);
+  --color-glass-card: var(--bg-card);
+  --color-glass-border: var(--border-medium);
+  --color-accent: var(--accent-primary);
+  
+  --font-sans: var(--font-orbitron), system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  background: var(--bg-app);
+  background-image: var(--bg-app-grid);
+  background-size: 24px 24px;
+  color: var(--text-primary);
+  font-family: var(--font-orbitron), var(--font-sans), system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Custom scrollbar for dark theme */
+/* Utility Classes – control panel / Factorio-style */
+
+.glass-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  border-left: 3px solid var(--accent-primary);
+}
+
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 0;
+  box-shadow: var(--shadow-md);
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  border-left: 3px solid var(--accent-primary);
+}
+
+.glass-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg);
+}
+
+.glass-button {
+  background: var(--bg-input);
+  border: 1px solid var(--border-medium);
+  border-radius: 0;
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+}
+
+.glass-button:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  color: #0c0e0f;
+  border: 1px solid rgba(255, 165, 0, 0.5);
+  border-radius: 0;
+  font-weight: 700;
+  box-shadow: 0 0 16px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 24px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.3);
+  filter: brightness(1.1);
+}
+
+.btn-primary:active {
+  filter: brightness(0.95);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.glass-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0;
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  background: rgba(12, 14, 15, 0.95);
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: rgba(255, 255, 255, 0.2);
 }

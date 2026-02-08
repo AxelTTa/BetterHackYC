@@ -267,7 +267,7 @@ export default function NewWorkspacePage() {
       <header className="border-b border-gray-700">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
+            <div className="w-8 h-8 bg-amber-600 rounded-none flex items-center justify-center font-bold">
               3D
             </div>
             <span className="text-xl font-bold">TrainSpace</span>
@@ -292,7 +292,7 @@ export default function NewWorkspacePage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500"
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-none focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-gray-500"
               placeholder="e.g., Warehouse Safety Training"
             />
           </div>
@@ -306,9 +306,9 @@ export default function NewWorkspacePage() {
               <button
                 type="button"
                 onClick={() => setCreationMode("generate")}
-                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
+                className={`flex-1 px-4 py-3 rounded-none font-medium transition-colors ${
                   creationMode === "generate"
-                    ? "bg-blue-600 text-white"
+                    ? "bg-amber-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                 }`}
               >
@@ -317,9 +317,9 @@ export default function NewWorkspacePage() {
               <button
                 type="button"
                 onClick={() => setCreationMode("model-id")}
-                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
+                className={`flex-1 px-4 py-3 rounded-none font-medium transition-colors ${
                   creationMode === "model-id"
-                    ? "bg-blue-600 text-white"
+                    ? "bg-amber-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                 }`}
               >
@@ -338,7 +338,7 @@ export default function NewWorkspacePage() {
                 type="text"
                 value={modelId}
                 onChange={(e) => setModelId(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500 font-mono"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-none focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-gray-500 font-mono"
                 placeholder="e.g., abc123-def456-ghi789"
               />
               <p className="text-xs text-gray-500 mt-2">
@@ -355,7 +355,7 @@ export default function NewWorkspacePage() {
                 </label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center cursor-pointer hover:border-gray-600 transition-colors"
+                  className="border-2 border-dashed border-gray-700 rounded-none p-8 text-center cursor-pointer hover:border-gray-600 transition-colors"
                 >
                   <svg className="w-10 h-10 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -379,7 +379,7 @@ export default function NewWorkspacePage() {
                         <img
                           src={preview}
                           alt={`Preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg"
+                          className="w-full h-24 object-cover rounded-none"
                         />
                         <button
                           onClick={() => removeImage(index)}
@@ -412,12 +412,12 @@ export default function NewWorkspacePage() {
                 <button
                   type="button"
                   onClick={() => setUseDraft(!useDraft)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    useDraft ? "bg-blue-600" : "bg-gray-700"
+                  className={`relative w-12 h-6 rounded-none transition-colors ${
+                    useDraft ? "bg-amber-600" : "bg-gray-700"
                   }`}
                 >
                   <span
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-none transition-transform ${
                       useDraft ? "left-7" : "left-1"
                     }`}
                   />
@@ -431,12 +431,12 @@ export default function NewWorkspacePage() {
 
           {/* Status Message */}
           {statusMessage && (
-            <div className={`p-4 rounded-lg ${
+            <div className={`p-4 rounded-none ${
               status === "error" 
                 ? "bg-red-900/50 border border-red-500 text-red-200" 
                 : status === "complete"
                 ? "bg-green-900/50 border border-green-500 text-green-200"
-                : "bg-blue-900/50 border border-blue-500 text-blue-200"
+                : "bg-amber-900/30 border border-amber-600 text-amber-200"
             }`}>
               {statusMessage}
             </div>
@@ -446,7 +446,7 @@ export default function NewWorkspacePage() {
           <button
             onClick={handleCreate}
             disabled={status === "generating" || status === "uploading"}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+            className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-500 disabled:cursor-not-allowed rounded-none font-medium transition-colors"
           >
             {status === "uploading" 
               ? "Uploading..." 
